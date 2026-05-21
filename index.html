@@ -1,45 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Simple Input App</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloudflare Database Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #222;
+    }
+    input {
+      padding: 8px;
+      margin-right: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 8px 12px;
+      background-color: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background: #fff;
+      margin: 6px 0;
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-  <h1>Enter Your Data</h1>
-  <form id="dataForm">
-    <label>Field 1: <input type="text" id="field1" required></label><br><br>
-    <label>Field 2: <input type="text" id="field2" required></label><br><br>
-    <button type="submit">Submit</button>
-  </form>
+  <h1>Add Record</h1>
+  <input id="name" placeholder="Name" />
+  <input id="email" placeholder="Email" />
+  <button onclick="addRecord()">Add</button>
 
-  <h2>Stored Entries</h2>
-  <ul id="entries"></ul>
+  <h2>Stored Records:</h2>
+  <ul id="records"></ul>
 
   <script>
-    async function loadEntries() {
-      const res = await fetch('/entries');
-      const data = await res.json();
-      const list = document.getElementById('entries');
-      list.innerHTML = '';
-      data.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = `${item.field1} - ${item.field2}`;
-        list.appendChild(li);
+    const WORKER_URL = "https://cloudflaredb-pages.yasir-ali.workers.dev";
+
+    async function addRecord() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      if (!name || !email) return alert("Please enter both name and email.");
+
+      await fetch(`${WORKER_URL}/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email })
       });
+
+      document.getElementById("name").value = "";
+      document.getElementById("email").value = "";
+      loadRecords();
     }
 
-    document.getElementById('dataForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const field1 = document.getElementById('field1').value;
-      const field2 = document.getElementById('field2').value;
-      await fetch('/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ field1, field2 })
-      });
-      document.getElementById('field1').value = '';
-      document.getElementById('field2').value = '';
-      loadEntries();
-    });
+    async function loadRecords() {
+      const res = await fetch(`${WORKER_URL}/list`);
+      const data = await res.json();
+      const container = document.getElementById("records");
+      container.innerHTML = data.map(r => `<li><strong>${r.email}</strong></li>`).join("");
+    }
+
+    loadRecords();
+  </script>
+</body>
+</html>
 
     loadEntries();
   </script>
